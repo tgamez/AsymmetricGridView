@@ -15,7 +15,7 @@ import com.felipecsl.asymmetricgridview.library.Utils;
 
 public class AsymmetricGridView extends ListView {
 
-    private static final int DEFAULT_COLUMN_COUNT = 2;
+    private static final int DEFAULT_COLUMN_COUNT = 3;
     private static final String TAG = "AsymmetricGridView";
     protected int numColumns = DEFAULT_COLUMN_COUNT;
     protected int requestedHorizontalSpacing;

@@ -29,7 +29,7 @@ class RowInfo<T extends AsymmetricItem> implements Parcelable {
         spaceLeft = in.readFloat();
         int totalItems = in.readInt();
 
-        items = new ArrayList<>();
+        items = new ArrayList();
         final ClassLoader classLoader = AsymmetricItem.class.getClassLoader();
 
         for (int i = 0; i < totalItems; i++) {

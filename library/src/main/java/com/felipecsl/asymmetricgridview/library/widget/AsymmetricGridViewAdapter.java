@@ -13,7 +13,6 @@ import android.widget.LinearLayout;
 
 import com.felipecsl.asymmetricgridview.library.AsymmetricGridViewAdapterContract;
 import com.felipecsl.asymmetricgridview.library.AsyncTaskCompat;
-import com.felipecsl.asymmetricgridview.library.R;
 import com.felipecsl.asymmetricgridview.library.Utils;
 import com.felipecsl.asymmetricgridview.library.model.AsymmetricItem;
 
@@ -33,16 +32,21 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
     protected final Context context;
     protected final List<T> items;
 
-    private Map<Integer, RowInfo<T>> itemsPerRow = new HashMap<>();
+    private Map<Integer, RowInfo<T>> itemsPerRow = new HashMap<Integer, RowInfo<T>>();
     private final ViewPool<IcsLinearLayout> linearLayoutPool;
-    private final ViewPool<View> viewPool = new ViewPool<>();
+    private final ViewPool<View> viewPool = new ViewPool<View>();
     private ProcessRowsTask asyncTask;
 
+    // Spotlio: Changed for insets
+    protected int insetBottom 	= 0;
+    protected int insetLeft		= 0;
+    protected int insetsColor	= 0;
+    
     public AsymmetricGridViewAdapter(final Context context,
                                      final AsymmetricGridView listView,
                                      final List<T> items) {
 
-        this.linearLayoutPool = new ViewPool<>(new LinearLayoutPoolObjectFactory(context));
+        this.linearLayoutPool = new ViewPool<IcsLinearLayout>(new LinearLayoutPoolObjectFactory(context));
         this.items = items;
         this.context = context;
         this.listView = listView;
@@ -77,7 +81,9 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
         final int rowWidth = listView.getColumnWidth() * columnSpan;
         // when the item spans multiple columns, we need to account for the horizontal padding
         // and add that to the total final width
-        return Math.min(rowWidth + ((columnSpan - 1) * listView.getRequestedHorizontalSpacing()), Utils.getScreenWidth(context));
+        // Spotlio: Changed for insets
+        // return Math.min(rowWidth + ((columnSpan - 1) * listView.getRequestedHorizontalSpacing()), Utils.getScreenWidth(context));
+        return Math.min(rowWidth + ((columnSpan - 1) * insetLeft), Utils.getScreenWidth(context));
     }
 
     @Override
@@ -88,7 +94,7 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
         LinearLayout layout = findOrInitializeLayout(convertView);
 
         final RowInfo<T> rowInfo = itemsPerRow.get(position);
-        final List<T> rowItems = new ArrayList<>();
+        final List<T> rowItems = new ArrayList<T>();
         rowItems.addAll(rowInfo.getItems());
 
         // Index to control the current position
@@ -120,7 +126,8 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
                 final LinearLayout childLayout = findOrInitializeChildLayout(layout, columnIndex);
                 final View childConvertView = viewPool.get();
                 final View v = getActualView(index, childConvertView, parent);
-                v.setTag(currentItem);
+                // TODO: Disabled to ViewHolder adapter works
+                //v.setTag(currentItem);
                 v.setOnClickListener(this);
                 v.setOnLongClickListener(this);
 
@@ -130,6 +137,13 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
                 v.setLayoutParams(new LinearLayout.LayoutParams(getRowWidth(currentItem),
                         getRowHeight(currentItem)));
 
+                // Spotlio: insets
+                if (columnIndex != 0) {
+                	childLayout.setPadding(insetLeft, 0, 0, insetBottom);
+                } else {
+                	childLayout.setPadding(0, 0, 0, insetBottom);
+                }
+                
                 childLayout.addView(v);
             } else if (currentIndex < rowItems.size() - 1) {
                 // Try again with next item
@@ -165,7 +179,7 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
             bundle.setClassLoader(getClass().getClassLoader());
 
             final int totalItems = bundle.getInt("totalItems");
-            final List<T> tmpItems = new ArrayList<>();
+            final List<T> tmpItems = new ArrayList<T>();
 
             for (int i = 0; i < totalItems; i++)
                 tmpItems.add((T) bundle.getParcelable("item_" + i));
@@ -184,8 +198,10 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
             if (listView.isDebugging())
                 layout.setBackgroundColor(Color.parseColor("#83F27B"));
 
-            layout.setShowDividers(IcsLinearLayout.SHOW_DIVIDER_MIDDLE);
-            layout.setDividerDrawable(context.getResources().getDrawable(R.drawable.item_divider_horizontal));
+            // Spotlio: Insets
+            //layout.setShowDividers(IcsLinearLayout.SHOW_DIVIDER_MIDDLE);
+            layout.setShowDividers(IcsLinearLayout.SHOW_DIVIDER_NONE);
+            // layout.setDividerDrawable(context.getResources().getDrawable(R.drawable.item_divider_horizontal));
 
             layout.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT,
                     AbsListView.LayoutParams.WRAP_CONTENT));
@@ -216,8 +232,10 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
             if (listView.isDebugging())
                 childLayout.setBackgroundColor(Color.parseColor("#837BF2"));
 
-            childLayout.setShowDividers(IcsLinearLayout.SHOW_DIVIDER_MIDDLE);
-            childLayout.setDividerDrawable(context.getResources().getDrawable(R.drawable.item_divider_vertical));
+            // Spotlio: Insets
+            //childLayout.setShowDividers(IcsLinearLayout.SHOW_DIVIDER_MIDDLE);
+            childLayout.setShowDividers(IcsLinearLayout.SHOW_DIVIDER_NONE);
+            //childLayout.setDividerDrawable(context.getResources().getDrawable(R.drawable.item_divider_vertical));
 
             childLayout.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT,
                     AbsListView.LayoutParams.MATCH_PARENT));
@@ -276,15 +294,22 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
     @Override
     @SuppressWarnings("unchecked")
     public void onClick(final View v) {
+        // TODO: Disabled to ViewHolder adapter works
+    	/*
         final T item = (T) v.getTag();
         listView.fireOnItemClick(items.indexOf(item), v);
+        */
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public boolean onLongClick(View v) {
+        // TODO: Disabled to ViewHolder adapter works
+    	/*
         final T item = (T) v.getTag();
         return listView.fireOnItemLongClick(items.indexOf(item), v);
+        */
+        return true;	
     }
 
     @Override
@@ -306,7 +331,7 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
         viewPool.clear();
         itemsPerRow.clear();
 
-        final List<T> itemsToAdd = new ArrayList<>();
+        final List<T> itemsToAdd = new ArrayList<T>();
         itemsToAdd.addAll(items);
 
         asyncTask = new ProcessRowsTask();
@@ -318,7 +343,7 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
     }
 
     private RowInfo<T> calculateItemsForRow(final List<T> items, final float initialSpaceLeft) {
-        final List<T> itemsThatFit = new ArrayList<>();
+        final List<T> itemsThatFit = new ArrayList<T>();
         int currentItem = 0;
         int rowHeight = 1;
         float areaLeft = initialSpaceLeft;
@@ -344,13 +369,13 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
             }
         }
 
-        return new RowInfo<>(rowHeight, itemsThatFit, areaLeft);
+        return new RowInfo<T>(rowHeight, itemsThatFit, areaLeft);
     }
 
     class ProcessRowsTask extends AsyncTaskCompat<List<T>, Void, List<RowInfo<T>>> {
 
         @Override
-        @SafeVarargs
+        //@SafeVarargs
         protected final List<RowInfo<T>> doInBackground(final List<T>... params) {
             return calculateItemsPerRow(0, params[0]);
         }
@@ -369,7 +394,7 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
         }
 
         private List<RowInfo<T>> calculateItemsPerRow(int currentRow, final List<T> itemsToAdd) {
-            List<RowInfo<T>> rows = new ArrayList<>();
+            List<RowInfo<T>> rows = new ArrayList<RowInfo<T>>();
 
             while (!itemsToAdd.isEmpty()) {
                 final RowInfo<T> stuffThatFit = calculateItemsForRow(itemsToAdd);
@@ -392,4 +417,11 @@ public abstract class AsymmetricGridViewAdapter<T extends AsymmetricItem>
         }
     }
 
+    // Spotlio: Changed for insets
+    public void setInsets(int insetsColor, int insetBottom, int insetLeft) {
+	    	this.insetsColor = insetsColor;
+	    	this.insetBottom = insetBottom;
+	    	this.insetLeft   = insetLeft;
+    }
+    
 }

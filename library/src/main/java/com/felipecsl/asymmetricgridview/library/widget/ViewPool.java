@@ -20,7 +20,7 @@ class ViewPool<T extends View> implements Parcelable {
         }
     }
 
-    Stack<T> stack = new Stack<>();
+    Stack<T> stack = new Stack();
     PoolObjectFactory<T> factory = null;
     PoolStats stats;
 
